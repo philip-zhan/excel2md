@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.BitSet;
 
-public class xls2md {
+public class xlsx2md {
     public static void main(String[] args) {
         if (args.length == 0) {
             System.out.println("请指定需要转换的文件");
