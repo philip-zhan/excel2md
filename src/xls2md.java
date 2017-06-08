@@ -16,7 +16,6 @@ public class xls2md {
             return;
         }
         parseXls(inputFile);
-
     }
 
     private static File readInputFile(String fileName){
