@@ -2,7 +2,6 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.converters.IParameterSplitter;
-import javafx.util.Pair;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.*;
 
@@ -14,11 +13,7 @@ import java.util.*;
 
 public class Main {
 
-//    @Parameter(names = {"--output", "-o"},
-//            description = "输出的Markdown文件名（多个文件用空格隔开）",
-//            variableArity = true)
-//    List<String> outputFileNames;
-
+    // custom space splitter class for splitting "--sheet" arguments
     public static class SpaceSplitter implements IParameterSplitter {
         public List<String> split(String value) {
             return Arrays.asList(value.split(" "));
@@ -26,8 +21,8 @@ public class Main {
     }
 
     // Main parameter
-    @Parameter(description = "需要转换的Excel文件名（多个文件用空格隔开）"
-            , required = true
+    @Parameter(description = "需要转换的Excel文件名（多个文件用空格隔开）",
+            required = true
     )
     static List<String> inputFileNames;
 
@@ -38,10 +33,10 @@ public class Main {
     )
     static List<String> sheetsList = new ArrayList<String>();
 
-    @Parameter(names = {"--minify", "-m"},
-            description = "不填充多余空格使列对齐"
+    @Parameter(names = {"--align", "-a"},
+            description = "填充多余空格使列对齐"
     )
-    static boolean minify = true;
+    static boolean align = false;
 
     @Parameter(names = {"--help", "-help"},
             description = "使用说明",
@@ -53,7 +48,7 @@ public class Main {
     public static void main(String[] args) {
         Main main = new Main();
         JCommander jCommander = JCommander.newBuilder().addObject(main).build();
-        jCommander.setProgramName("xlsx2md");
+        jCommander.setProgramName("excel2md");
         try {
             jCommander.parse(args);
             if (main.help){
@@ -241,14 +236,14 @@ public class Main {
 
     public static String getCellContent(Row row, int i, int columnWidth) {
         String minifiedCellContent = getMinifiedCellContent(row, i);
-        if (minify) {
-            return minifiedCellContent;
-        }else{
+        if (align) {
             int additionalSpaces = columnWidth - minifiedCellContent.length();
             if (additionalSpaces < 0){
                 additionalSpaces = 0;
             }
             return minifiedCellContent + new String(new char[additionalSpaces]).replace("\0", " ");
+        }else{
+            return minifiedCellContent;
         }
     }
 
