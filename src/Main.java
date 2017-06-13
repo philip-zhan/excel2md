@@ -14,7 +14,7 @@ import java.util.*;
 public class Main {
 
     // custom space splitter class for splitting "--sheet" arguments
-    public static class SpaceSplitter implements IParameterSplitter {
+    private static class SpaceSplitter implements IParameterSplitter {
         public List<String> split(String value) {
             return Arrays.asList(value.split(" "));
         }
@@ -24,34 +24,33 @@ public class Main {
     @Parameter(description = "需要转换的Excel文件名（多个文件用空格隔开）",
             required = true
     )
-    static List<String> inputFileNames;
-
+    private static List<String> inputFileNames;
     @Parameter(names = {"--sheet", "-s"},
-            description = "需要转换Excel文件里的第几张表（从0开始，多张表用逗号隔开，默认全转）",
+            description = "需要转换Excel文件里的第几张表（从0开始，多张表用逗号隔开）",
             required = true,
-            splitter = SpaceSplitter.class
+            splitter = SpaceSplitter.class,
+            order = 0
     )
-    static List<String> sheetsList = new ArrayList<String>();
-
+    private static List<String> sheetsList = new ArrayList<>();
     @Parameter(names = {"--align", "-a"},
-            description = "填充多余空格使列对齐"
+            description = "填充多余空格使列对齐",
+            order = 1
     )
-    static boolean align = false;
-
+    private static boolean align = false;
     @Parameter(names = {"--help", "-help"},
             description = "使用说明",
-            help = true
+            help = true,
+            hidden = true
     )
-    static boolean help = false;
+    private static boolean help = false;
 
-
-    public static void main(String[] args) {
+    private static void main(String[] args) {
         Main main = new Main();
         JCommander jCommander = JCommander.newBuilder().addObject(main).build();
         jCommander.setProgramName("excel2md");
         try {
             jCommander.parse(args);
-            if (main.help){
+            if (help) {
                 jCommander.usage();
                 return;
             }
@@ -62,13 +61,13 @@ public class Main {
         }
     }
 
-    public void run() {
-        //TODO: Exception in thread "main" java.lang.NullPointerException at Main.run(Main.java:70)
-        if (inputFileNames.size() != sheetsList.size()){
-            //TODO: warning message
+    private void run() {
+        if (inputFileNames.size() != sheetsList.size()) {
+            //TODO: Exception in thread "main" java.lang.NoSuchMethodError: java.lang.String.join(Ljava/lang/CharSequence;[Ljava/lang/CharSequence;)Ljava/lang/String;
+            System.out.println("每个Excel文件后必须指定需要转换的表");
             return;
         }
-        for (int i = 0; i < inputFileNames.size(); i++){
+        for (int i = 0; i < inputFileNames.size(); i++) {
             String inputFileName = inputFileNames.get(i);
             String sheets = sheetsList.get(i);
 
@@ -80,7 +79,7 @@ public class Main {
         }
     }
 
-    public static File readInputFile(String fileName) {
+    private static File readInputFile(String fileName) {
         if (fileName.isEmpty()) {
             System.out.println("请指定需要转换的文件");
             return null;
@@ -99,35 +98,34 @@ public class Main {
         return inputFile;
     }
 
-    public static BitSet getSheets(Workbook workbook, String sheets) {
-        //System.out.println(workbook.getNumberOfSheets());
+    private static BitSet getSheets(int sheetsInWorkbook, String sheets) {
         BitSet sheetsBitSet = new BitSet();
-        //new BitSet(workbook.getNumberOfSheets() - 1);
         // convert all sheets in the workbook
         if (sheets.toLowerCase().contains("all")){
             // set all sheet bits
-            sheetsBitSet.set(0, workbook.getNumberOfSheets());
-            System.out.println(sheetsBitSet);
+            sheetsBitSet.set(0, sheetsInWorkbook);
             return sheetsBitSet;
         }
         String[] sheetsArray = sheets.split(",");
         for (String sheet : sheetsArray) {
             try {
-                sheetsBitSet.set(Integer.parseInt(sheet));
-            }catch (NumberFormatException ex) {
-                //TODO message
-                System.out.println();
-                return null;
-            }catch (IndexOutOfBoundsException ex) {
-                //TODO message
-                System.out.println();
+                int sheetIndex = Integer.parseInt(sheet);
+                if (sheetIndex < sheetsInWorkbook) {
+                    sheetsBitSet.set(sheetIndex);
+                } else {
+                    // warning
+                    System.out.println("表序号超出范围");
+                }
+            } catch (NumberFormatException | IndexOutOfBoundsException ex) {
+                // exception
+                System.out.println("表序号必须为非负整数");
                 return null;
             }
         }
         return sheetsBitSet;
     }
 
-    public static void parseXls(File inputFile, String sheets) {
+    private static void parseXls(File inputFile, String sheets) {
         Workbook workbook;
         try {
             workbook = WorkbookFactory.create(inputFile);
@@ -136,11 +134,10 @@ public class Main {
             return;
         }
 
-        BitSet sheetsBitSet = getSheets(workbook, sheets);
+        BitSet sheetsBitSet = getSheets(workbook.getNumberOfSheets(), sheets);
         if (sheetsBitSet == null) {
             return;
         }
-        // TODO: convert multiple sheets or specify sheet to convert
         // iterate through sheets
         for (int i = 0; i < sheetsBitSet.length(); i++) {
             if (sheetsBitSet.get(i)){
@@ -173,13 +170,13 @@ public class Main {
                     }
                     printWriter.close();
                 }catch (FileNotFoundException ex) {
-                    //TODO message
+                    System.out.println("无法创建文件");
                 }
             }
         }
     }
 
-    public static Map.Entry<List<Integer>, BitSet> getDimensions(Sheet sheet) {
+    private static Map.Entry<List<Integer>, BitSet> getDimensions(Sheet sheet) {
         List<Integer> columnWidthList = new ArrayList<>();
         BitSet rowBitSet = new BitSet();
         // getLastRowNum() is 0 based, thus the '<='
@@ -187,13 +184,9 @@ public class Main {
             Row row = sheet.getRow(i);
             // if not an empty row, sweep columns
             if (row != null){
-//                System.out.println("==================");
-//                System.out.println(row.getLastCellNum());
-//                System.out.println("------------------");
                 int lastCellNum = row.getLastCellNum();
                 // iterate through cells
                 for (int j = 0; j <= lastCellNum; j++) {
-                    //System.out.println(j);
                     int cellWidth = getMinifiedCellContent(row, j).length();
                     if (j >= columnWidthList.size()) {
                         columnWidthList.add(0);
@@ -218,7 +211,7 @@ public class Main {
         return new AbstractMap.SimpleEntry<>(columnWidthList.subList(0, indexOfLastNonZero + 1), rowBitSet);
     }
 
-    public static void buildTableHeader(Row row, PrintWriter writer, List<Integer> columnWidthList) {
+    private static void buildTableHeader(Row row, PrintWriter writer, List<Integer> columnWidthList) {
         StringBuilder row1 = new StringBuilder("|");
         StringBuilder row2 = new StringBuilder("|");
         for (int i = 0; i < columnWidthList.size(); i++) {
@@ -234,7 +227,7 @@ public class Main {
         writer.println(row2.toString());
     }
 
-    public static String getCellContent(Row row, int i, int columnWidth) {
+    private static String getCellContent(Row row, int i, int columnWidth) {
         String minifiedCellContent = getMinifiedCellContent(row, i);
         if (align) {
             int additionalSpaces = columnWidth - minifiedCellContent.length();
@@ -247,14 +240,11 @@ public class Main {
         }
     }
 
-    public static String getMinifiedCellContent(Row row, int i) {
+    private static String getMinifiedCellContent(Row row, int i) {
         DataFormatter formatter = new DataFormatter();
-        //System.out.println(i);
-        //System.out.println(row);
         Cell cell = row.getCell(i, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
         String lineSeparatorRemoved = formatter.formatCellValue(cell).replaceAll(System.lineSeparator(), "");
-        String pipeCharacterEscaped = lineSeparatorRemoved.replaceAll("\\|", "\\\\|");
-        return pipeCharacterEscaped;
+        return lineSeparatorRemoved.replaceAll("\\|", "\\\\|");
     }
 
 }
