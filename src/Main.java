@@ -44,6 +44,9 @@ public class Main {
     )
     private static boolean help = false;
 
+    private static FormulaEvaluator evaluator;
+    private static DataFormatter formatter = new DataFormatter();
+
     public static void main(String[] args) {
         Main main = new Main();
         JCommander jCommander = JCommander.newBuilder().addObject(main).build();
@@ -138,6 +141,9 @@ public class Main {
         if (sheetsBitSet == null) {
             return;
         }
+
+        evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+
         // iterate through sheets
         for (int i = 0; i < sheetsBitSet.length(); i++) {
             if (sheetsBitSet.get(i)){
@@ -241,9 +247,9 @@ public class Main {
     }
 
     private static String getMinifiedCellContent(Row row, int i) {
-        DataFormatter formatter = new DataFormatter();
         Cell cell = row.getCell(i, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
-        String lineSeparatorRemoved = formatter.formatCellValue(cell).replaceAll(System.lineSeparator(), "");
+        CellValue cellValue = evaluator.evaluate(cell);
+        String lineSeparatorRemoved = formatter.formatCellValue(cell, evaluator).replaceAll(System.lineSeparator(), "");
         return lineSeparatorRemoved.replaceAll("\\|", "\\\\|");
     }
 
