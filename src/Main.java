@@ -14,7 +14,7 @@ import java.util.*;
 public class Main {
 
     // custom space splitter class for splitting "--sheet" arguments
-    private static class SpaceSplitter implements IParameterSplitter {
+    public static class SpaceSplitter implements IParameterSplitter {
         public List<String> split(String value) {
             return Arrays.asList(value.split(" "));
         }
@@ -44,7 +44,7 @@ public class Main {
     )
     private static boolean help = false;
 
-    private static void main(String[] args) {
+    public static void main(String[] args) {
         Main main = new Main();
         JCommander jCommander = JCommander.newBuilder().addObject(main).build();
         jCommander.setProgramName("excel2md");
@@ -155,7 +155,7 @@ public class Main {
                     int firstRowIndex = rowBitSet.nextSetBit(0);
                     buildTableHeader(sheet.getRow(firstRowIndex), printWriter, columnWidthList);
                     // iterate through rows
-                    for (int j = firstRowIndex; j < rowBitSet.length(); j++) {
+                    for (int j = firstRowIndex + 1; j < rowBitSet.length(); j++) {
                         // if row is not empty
                         if (rowBitSet.get(j)){
                             Row row = sheet.getRow(j);
