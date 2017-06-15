@@ -58,15 +58,13 @@ public class Main {
                 return;
             }
             main.run();
-        }
-        catch(ParameterException ex){
+        } catch (NoSuchMethodError | ParameterException ex) {
             jCommander.usage();
         }
     }
 
     private void run() {
         if (inputFileNames.size() != sheetsList.size()) {
-            //TODO: Exception in thread "main" java.lang.NoSuchMethodError: java.lang.String.join(Ljava/lang/CharSequence;[Ljava/lang/CharSequence;)Ljava/lang/String;
             System.out.println("每个Excel文件后必须指定需要转换的表");
             return;
         }
