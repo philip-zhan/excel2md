@@ -21,24 +21,24 @@ public class Main {
     }
 
     // Main parameter
-    @Parameter(description = "需要转换的Excel文件名（多个文件用空格隔开）",
+    @Parameter(description = "The name of file(s) you want to convert (separate multiple files with a space)",
             required = true
     )
     private static List<String> inputFileNames;
     @Parameter(names = {"--sheet", "-s"},
-            description = "需要转换Excel文件里的第几张表（从0开始，多张表用逗号隔开）",
+            description = "[Required] The index of sheet(s) you want to convert (0 indexed, separate multiple indices with a comma)",
             required = true,
             splitter = SpaceSplitter.class,
             order = 0
     )
     private static List<String> sheetsList = new ArrayList<>();
     @Parameter(names = {"--align", "-a"},
-            description = "填充多余空格使列对齐",
+            description = "[Optional] Append padding spaces to each cell to align columns",
             order = 1
     )
     private static boolean align = false;
     @Parameter(names = {"--help", "-help"},
-            description = "使用说明",
+            description = "User manual",
             help = true,
             hidden = true
     )
@@ -65,7 +65,7 @@ public class Main {
 
     private void run() {
         if (inputFileNames.size() != sheetsList.size()) {
-            System.out.println("每个Excel文件后必须指定需要转换的表");
+            System.out.println("Error: You must specify the sheet(s) you want to convert after each file name");
             return;
         }
         for (int i = 0; i < inputFileNames.size(); i++) {
@@ -82,18 +82,18 @@ public class Main {
 
     private static File readInputFile(String fileName) {
         if (fileName.isEmpty()) {
-            System.out.println("请指定需要转换的文件");
+            System.out.println("Error: Please specify the file(s) you want to convert");
             return null;
         } else if (!(fileName.endsWith(".xls") || fileName.endsWith(".xlsx"))) {
-            System.out.println("只能转换xls和xlsx文件");
+            System.out.println("Error: Invalid file format; can only convert .xls and .xlsx files");
             return null;
         }
         File inputFile = new File(fileName);
         if (!inputFile.exists()) {
-            System.out.println("文件不存在");
+            System.out.println("Error: " + fileName + " does not exist");
             return null;
         } else if (!inputFile.canRead()) {
-            System.out.println("无法读取文件");
+            System.out.println("Error: Could not read the input file " + fileName);
             return null;
         }
         return inputFile;
@@ -115,11 +115,11 @@ public class Main {
                     sheetsBitSet.set(sheetIndex);
                 } else {
                     // warning
-                    System.out.println("表序号超出范围");
+                    System.out.println("Warn: Sheet index out of bound; converted valid sheets if any");
                 }
             } catch (NumberFormatException | IndexOutOfBoundsException ex) {
                 // exception
-                System.out.println("表序号必须为非负整数");
+                System.out.println("Error: Sheet index must be non-negative integer");
                 return null;
             }
         }
@@ -131,7 +131,7 @@ public class Main {
         try {
             workbook = WorkbookFactory.create(inputFile);
         }catch (InvalidFormatException | IOException ex) {
-            System.out.println("无法打开文件");
+            System.out.println("Error: Invalid Excel file format");
             return;
         }
 
@@ -174,7 +174,7 @@ public class Main {
                     }
                     printWriter.close();
                 }catch (FileNotFoundException ex) {
-                    System.out.println("无法创建文件");
+                    System.out.println("Error: Could not create the markdown file");
                 }
             }
         }
@@ -212,15 +212,14 @@ public class Main {
                 indexOfLastNonZero = i;
             }
         }
-        return new AbstractMap.SimpleEntry<>(columnWidthList.subList(0, indexOfLastNonZero + 1), rowBitSet);
+        return new AbstractMap.SimpleEntry<>(
+                columnWidthList.subList(0, indexOfLastNonZero + 1), rowBitSet);
     }
 
     private static void buildTableHeader(Row row, PrintWriter writer, List<Integer> columnWidthList) {
         StringBuilder row1 = new StringBuilder("|");
         StringBuilder row2 = new StringBuilder("|");
         for (int i = 0; i < columnWidthList.size(); i++) {
-            //System.out.println(i);
-            //System.out.println(columnWidthList);
             String cellContent = getCellContent(row, i, columnWidthList.get(i));
             // build the separator row with each cell having the same width as the header
             String separator = new String(new char[cellContent.length() + 2]).replace("\0", "-");
@@ -247,7 +246,8 @@ public class Main {
     private static String getMinifiedCellContent(Row row, int i) {
         Cell cell = row.getCell(i, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
         CellValue cellValue = evaluator.evaluate(cell);
-        String lineSeparatorRemoved = formatter.formatCellValue(cell, evaluator).replaceAll(System.lineSeparator(), "");
+        String lineSeparatorRemoved = formatter.formatCellValue(cell, evaluator)
+                .replaceAll(System.lineSeparator(), "");
         return lineSeparatorRemoved.replaceAll("\\|", "\\\\|");
     }
 
